@@ -300,4 +300,82 @@ $recentLogsText
             newTheorem = theorem
         )
     }
+
+    suspend fun generateSceneIllustration(
+        apiKey: String,
+        sceneSummary: String,
+        characterName: String?,
+        outputFile: java.io.File
+    ): Result<String> = withContext(Dispatchers.IO) {
+        if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
+            return@withContext Result.failure(IllegalArgumentException("No valid Gemini API key"))
+        }
+
+        val characterPromptAnchor = when {
+            characterName?.contains("روجر") == true ->
+                "Character Roger: burly scarred medieval enforcer, black eyepatch over right eye, worn heavy fur coat, holding rough wooden cudgel, aggressive grim expression."
+            characterName?.contains("مورفاث") == true || characterName?.contains("ساحر") == true ->
+                "Character Master Morvath: elderly arrogant scholar-mage, sharp silver beard, luxurious midnight-blue robes embroidered with glowing cyan alchemical runes, holding runic parchment."
+            else ->
+                "Main Character Leo: 10-year-old fragile orphan boy with messy dark hair, shivering from freezing winter, sharp intense analytical adult eyes, wearing ragged oversized dark woolen cloak."
+        }
+
+        val fullImagePrompt = """
+Masterpiece dark fantasy illustration, stylized cinematic anime concept art, 16:9 ratio.
+Setting: Eldoria Empire, freezing winter cobblestone alley, snow covered barrels, Gothic medieval spires in cold snowy mist, faint amber lantern light and glowing blue arcane particles.
+Scene action: $sceneSummary
+$characterPromptAnchor
+Strict visual consistency: gritty medieval fantasy aesthetic, muted cool tones with glowing magic contrasts.
+        """.trimIndent()
+
+        try {
+            val jsonBody = JSONObject().apply {
+                put("contents", JSONArray().put(JSONObject().apply {
+                    put("parts", JSONArray().put(JSONObject().put("text", fullImagePrompt)))
+                }))
+                put("generationConfig", JSONObject().apply {
+                    put("responseModalities", JSONArray().put("IMAGE").put("TEXT"))
+                    put("imageConfig", JSONObject().apply {
+                        put("aspectRatio", "16:9")
+                    })
+                })
+            }
+
+            val request = Request.Builder()
+                .url("$BASE_URL/gemini-2.5-flash-image:generateContent?key=$apiKey")
+                .post(jsonBody.toString().toRequestBody("application/json; charset=utf-8".toMediaType()))
+                .build()
+
+            val response = okHttpClient.newCall(request).execute()
+            if (!response.isSuccessful) {
+                val errorBody = response.body?.string().orEmpty()
+                Log.w(TAG, "Image generation error HTTP ${response.code}: $errorBody")
+                return@withContext Result.failure(Exception("HTTP ${response.code}: $errorBody"))
+            }
+
+            val responseBody = response.body?.string().orEmpty()
+            val root = JSONObject(responseBody)
+            val candidates = root.optJSONArray("candidates") ?: return@withContext Result.failure(Exception("No image candidates"))
+            val firstCandidate = candidates.getJSONObject(0)
+            val content = firstCandidate.getJSONObject("content")
+            val parts = content.getJSONArray("parts")
+
+            for (i in 0 until parts.length()) {
+                val part = parts.getJSONObject(i)
+                if (part.has("inlineData")) {
+                    val inlineData = part.getJSONObject("inlineData")
+                    val base64Data = inlineData.getString("data")
+                    val imageBytes = android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT)
+                    outputFile.parentFile?.mkdirs()
+                    outputFile.writeBytes(imageBytes)
+                    return@withContext Result.success(outputFile.absolutePath)
+                }
+            }
+
+            Result.failure(Exception("No inlineData image in response"))
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed generating scene image", e)
+            Result.failure(e)
+        }
+    }
 }

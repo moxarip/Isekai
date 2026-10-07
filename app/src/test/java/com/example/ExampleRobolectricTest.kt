@@ -18,4 +18,12 @@ class ExampleRobolectricTest {
     val appName = context.getString(R.string.app_name)
     assertEquals("إعادة ولادة الشارع", appName)
   }
+
+  @Test
+  fun `launch MainActivity without crash`() {
+    val controller = org.robolectric.Robolectric.buildActivity(MainActivity::class.java)
+    controller.setup()
+    val activity = controller.get()
+    org.junit.Assert.assertNotNull(activity)
+  }
 }

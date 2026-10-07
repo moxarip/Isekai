@@ -68,6 +68,29 @@ data class NpcDialogue(
     val tone: NpcTone = NpcTone.THREATENING
 )
 
+enum class CharacterVoiceType(val labelAr: String, val pitch: Float, val speedRate: Float) {
+    NARRATOR("الراوي", 0.95f, 0.95f),
+    LEO("الصبي ليو", 1.35f, 1.05f),
+    ROGER("روجر الأعور", 0.70f, 0.88f),
+    MORVATH("الساحر مورفاث", 1.15f, 1.00f),
+    GUARD("حارس الدورية", 0.82f, 0.95f),
+    MERCHANT("التاجر", 1.05f, 1.10f);
+
+    companion object {
+        fun fromSpeaker(speakerName: String?): CharacterVoiceType {
+            if (speakerName == null) return NARRATOR
+            return when {
+                speakerName.contains("روجر") -> ROGER
+                speakerName.contains("مورفاث") || speakerName.contains("ساحر") -> MORVATH
+                speakerName.contains("حارس") || speakerName.contains("فارس") -> GUARD
+                speakerName.contains("تاجر") || speakerName.contains("خباز") -> MERCHANT
+                speakerName.contains("ليو") -> LEO
+                else -> NARRATOR
+            }
+        }
+    }
+}
+
 data class DiscoveredTheorem(
     val id: String,
     val titleAr: String,
@@ -85,6 +108,7 @@ data class TurnLog(
     val npcDialogue: NpcDialogue? = null,
     val statSummaryAr: String = "",
     val theoremUnlocked: DiscoveredTheorem? = null,
+    val sceneImagePath: String? = null,
     val timestamp: Long = System.currentTimeMillis()
 )
 
@@ -104,5 +128,6 @@ data class GameEngineTurnResponse(
     val suggestedActions: List<SuggestedAction> = emptyList(),
     val isGameOver: Boolean = false,
     val gameOverReasonAr: String? = null,
-    val newTheorem: DiscoveredTheorem? = null
+    val newTheorem: DiscoveredTheorem? = null,
+    val sceneImagePath: String? = null
 )

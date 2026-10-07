@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -7,27 +9,44 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.TurnLog
 import com.example.ui.theme.*
+import java.io.File
 
 @Composable
 fun StoryLogItem(
     turnLog: TurnLog,
+    isSpeakingThis: Boolean = false,
+    onPlayAudio: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isPrologue = turnLog.turnNumber == 1
 
+    // Load scene illustration bitmap if file exists
+    val sceneBitmap = remember(turnLog.sceneImagePath) {
+        turnLog.sceneImagePath?.let { path ->
+            val file = File(path)
+            if (file.exists() && file.length() > 0) {
+                runCatching { BitmapFactory.decodeFile(file.absolutePath) }.getOrNull()
+            } else null
+        }
+    }
+
     Surface(
         color = AlleyCard,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
             if (isPrologue) AmberGold.copy(alpha = 0.5f) else AlleyCardBorder
@@ -81,6 +100,54 @@ fun StoryLogItem(
                         }
                     }
                 }
+
+                // Voice audio play button
+                FilledTonalIconButton(
+                    onClick = onPlayAudio,
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = if (isSpeakingThis) VitalEnergy.copy(alpha = 0.25f) else Color(0xFF1E2838),
+                        contentColor = if (isSpeakingThis) VitalEnergy else TextGold
+                    ),
+                    modifier = Modifier
+                        .size(32.dp)
+                        .testTag("play_audio_turn_${turnLog.turnNumber}")
+                ) {
+                    Icon(
+                        imageVector = if (isSpeakingThis) Icons.Default.Stop else Icons.Default.VolumeUp,
+                        contentDescription = "استماع بصوت الشخصيات",
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            // Generated Scene Illustration
+            if (sceneBitmap != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .border(1.dp, AlleyCardBorder, RoundedCornerShape(10.dp))
+                ) {
+                    Image(
+                        bitmap = sceneBitmap.asImageBitmap(),
+                        contentDescription = "مشهد الحدث",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    // Atmospheric bottom vignette
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(Color.Transparent, Color(0xCC080A0F)),
+                                    startY = 100f
+                                )
+                            )
+                    )
+                }
             }
 
             // Player's Chosen Decision
@@ -99,7 +166,7 @@ fun StoryLogItem(
                         imageVector = Icons.Default.DirectionsRun,
                         contentDescription = "قرارك",
                         tint = AmberGold,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(

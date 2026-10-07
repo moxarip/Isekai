@@ -45,6 +45,7 @@ data class TurnLogEntity(
     val npcSpeaker: String?,
     val npcSpeech: String?,
     val npcTone: String?,
+    val sceneImagePath: String? = null,
     val timestamp: Long
 )
 

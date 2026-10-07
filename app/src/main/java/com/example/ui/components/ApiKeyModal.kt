@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,6 +27,10 @@ import com.example.ui.theme.*
 fun ApiKeyModal(
     currentMaskedKey: String,
     currentModel: String,
+    isAutoTtsEnabled: Boolean,
+    isImageGenEnabled: Boolean,
+    onToggleTts: () -> Unit,
+    onToggleImageGen: () -> Unit,
     onSaveKey: (newKey: String, model: String) -> Unit,
     onResetGame: () -> Unit,
     onDismiss: () -> Unit
@@ -64,15 +69,15 @@ fun ApiKeyModal(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Key,
-                                contentDescription = "مفتاح API",
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "الإعدادات",
                                 tint = AmberGold,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "إعدادات Gemini AI",
+                            text = "إعدادات اللعبة والذكاء",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = TextPrimary
@@ -87,12 +92,89 @@ fun ApiKeyModal(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "عند إدخال مفتاح الـ API من Google AI Studio، يتحول السرد إلى مغامرة مفتوحة لا نهائية تُحلل كل قرار تكتبه بدقة واقعية!",
-                    style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary, lineHeight = 18.sp)
-                )
+                // Feature Switches
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(AlleyCard)
+                        .padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Audio TTS Switch
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Icon(
+                                imageVector = Icons.Default.RecordVoiceOver,
+                                contentDescription = null,
+                                tint = TextGold,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "قراءة صوتية لكل شخصية",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = TextPrimary)
+                                )
+                                Text(
+                                    text = "نبرة خاصة للصبي ليو، روجر، الساحر، والراوي",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary, fontSize = 10.sp)
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = isAutoTtsEnabled,
+                            onCheckedChange = { onToggleTts() },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = AmberGold,
+                                checkedTrackColor = AmberDark.copy(alpha = 0.4f)
+                            )
+                        )
+                    }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = AlleyCardBorder)
+
+                    // Image Generation Switch
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Icon(
+                                imageVector = Icons.Default.Image,
+                                contentDescription = null,
+                                tint = FrostCyan,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "توليد صور المشاهد تلقائياً",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = TextPrimary)
+                                )
+                                Text(
+                                    text = "رسم أحداث السرد مع ثبات ملامح الشخصيات",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary, fontSize = 10.sp)
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = isImageGenEnabled,
+                            onCheckedChange = { onToggleImageGen() },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = FrostCyan,
+                                checkedTrackColor = FrostDark.copy(alpha = 0.4f)
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 if (currentMaskedKey.isNotBlank()) {
                     Row(
@@ -159,11 +241,11 @@ fun ApiKeyModal(
                         .testTag("api_key_input_field")
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Model Selector
                 Text(
-                    text = "نموذج الذكاء الاصطناعي (Model):",
+                    text = "نموذج السرد والتفكير (Model):",
                     style = MaterialTheme.typography.labelSmall.copy(color = TextGold, fontWeight = FontWeight.Bold)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -172,7 +254,7 @@ fun ApiKeyModal(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     val models = listOf(
-                        GeminiApiClient.MODEL_FLASH_LATEST to "Gemini Flash (أسرع وأذكى)",
+                        GeminiApiClient.MODEL_FLASH_LATEST to "Gemini Flash (أسرع وأدق)",
                         GeminiApiClient.MODEL_35_FLASH to "Gemini 3.5 Flash"
                     )
                     models.forEach { (modelId, modelLabel) ->
@@ -204,7 +286,7 @@ fun ApiKeyModal(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Action Buttons
                 Row(
@@ -221,7 +303,7 @@ fun ApiKeyModal(
                     ) {
                         Icon(imageVector = Icons.Default.RestartAlt, contentDescription = "إعادة اللعبة", modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("إعادة بدء اللعبة", style = MaterialTheme.typography.labelSmall)
+                        Text("إعادة اللعبة", style = MaterialTheme.typography.labelSmall)
                     }
 
                     Row {

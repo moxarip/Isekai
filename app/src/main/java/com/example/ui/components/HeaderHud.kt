@@ -1,6 +1,6 @@
 package com.example.ui.components
 
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,14 +23,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.db.GameSessionEntity
+import com.example.data.model.CharacterVoiceType
 import com.example.ui.theme.*
 
 @Composable
 fun HeaderHud(
     session: GameSessionEntity?,
     isAiActive: Boolean,
+    isHudExpanded: Boolean,
+    isAutoTtsEnabled: Boolean,
+    isSpeaking: Boolean,
+    currentSpeaker: CharacterVoiceType?,
+    isImageGenerationEnabled: Boolean,
     inventoryCount: Int,
     theoremsCount: Int,
+    onToggleExpand: () -> Unit,
+    onToggleTts: () -> Unit,
+    onToggleImages: () -> Unit,
     onOpenInventory: () -> Unit,
     onOpenTheorems: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -60,63 +69,113 @@ fun HeaderHud(
         color = AlleySurface,
         border = androidx.compose.foundation.BorderStroke(1.dp, AlleyCardBorder),
         shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
-        shadowElevation = 8.dp,
+        shadowElevation = 6.dp,
         modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .padding(horizontal = 14.dp, vertical = 8.dp)
         ) {
-            // Top App Bar Row
+            // Main Compact Bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Game Title & Chapter
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                // Title & Chapter
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable { onToggleExpand() }
+                        .weight(1f)
+                ) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(32.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Brush.linearGradient(listOf(AmberDark, AmberGold)))
-                            .padding(2.dp),
+                            .background(Brush.linearGradient(listOf(AmberDark, AmberGold))),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.AutoStories,
                             contentDescription = "شعار اللعبة",
                             tint = AlleyBackground,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "إعادة ولادة الشارع",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = if (isHudExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = "توسيع أو طي",
+                                tint = TextMuted,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                         Text(
-                            text = "إعادة ولادة الشارع",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
+                            text = if (isSpeaking && currentSpeaker != null) "يتحدث الآن: ${currentSpeaker.labelAr}" else "زقاق الصقيع • إلدوريا",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = if (isSpeaking) VitalEnergy else TextSecondary,
+                                fontSize = 10.sp
                             ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = "عالم إلدوريا • الفصل الأول: زقاق الصقيع",
-                            style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary),
                             maxLines = 1
                         )
                     }
                 }
 
-                // Action Buttons (Grimoire, Bag, Settings)
+                // Toolbar Actions: Voice, Images, Grimoire, Bag, Key
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Grimoire / Theorems button
+                    // Voice TTS Toggle
+                    IconButton(
+                        onClick = onToggleTts,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .testTag("toggle_tts_button")
+                    ) {
+                        Icon(
+                            imageVector = if (isAutoTtsEnabled) {
+                                if (isSpeaking) Icons.Default.VolumeUp else Icons.Default.VolumeDown
+                            } else {
+                                Icons.Default.VolumeOff
+                            },
+                            contentDescription = "قراءة صوتية",
+                            tint = if (isSpeaking) VitalEnergy else if (isAutoTtsEnabled) TextGold else TextMuted,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
+
+                    // Scene Images Toggle
+                    IconButton(
+                        onClick = onToggleImages,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .testTag("toggle_images_button")
+                    ) {
+                        Icon(
+                            imageVector = if (isImageGenerationEnabled) Icons.Default.Image else Icons.Default.HideImage,
+                            contentDescription = "توليد صور المشاهد",
+                            tint = if (isImageGenerationEnabled) FrostCyan else TextMuted,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
+
+                    // Theorems / Grimoire
                     IconButton(
                         onClick = onOpenTheorems,
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(34.dp)
                             .testTag("theorems_button")
                     ) {
                         BadgedBox(
@@ -130,9 +189,9 @@ fun HeaderHud(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Psychology,
-                                contentDescription = "قوانين الفيزياء والسحر المكتشفة",
+                                contentDescription = "قوانين الفيزياء والسحر",
                                 tint = ScienceIndigo,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(19.dp)
                             )
                         }
                     }
@@ -141,7 +200,7 @@ fun HeaderHud(
                     IconButton(
                         onClick = onOpenInventory,
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(34.dp)
                             .testTag("inventory_button")
                     ) {
                         BadgedBox(
@@ -155,201 +214,226 @@ fun HeaderHud(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.WorkOutline,
-                                contentDescription = "الحقيبة والمقتنيات",
+                                contentDescription = "الحقيبة",
                                 tint = AmberGold,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(19.dp)
                             )
                         }
                     }
 
-                    // Settings / API Button
+                    // Settings Button
                     IconButton(
                         onClick = onOpenSettings,
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(34.dp)
                             .testTag("api_settings_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Key,
-                            contentDescription = "إعدادات Gemini API",
+                            contentDescription = "الإعدادات",
                             tint = if (isAiActive) VitalEnergy else TextSecondary,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // AI Status indicator pill
+            // Compact Inline Vital Pills Row (Uncluttered)
             Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(if (isAiActive) Color(0x2010B981) else Color(0x20F59E0B))
-                    .border(
-                        1.dp,
-                        if (isAiActive) Color(0x6010B981) else Color(0x60F59E0B),
-                        RoundedCornerShape(20.dp)
-                    )
-                    .clickable { onOpenSettings() }
-                    .padding(horizontal = 10.dp, vertical = 3.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(if (isAiActive) VitalEnergy else AmberGold)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = if (isAiActive) "متصل بـ Gemini Flash (توليد غير محدود)" else "وضع الراوي المحلي (اضغط لتفعيل API)",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = if (isAiActive) VitalEnergy else AmberGold,
-                        fontSize = 11.sp
-                    )
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Vital Stats Progress Gauges Grid
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Energy (الطاقة)
-                StatBarItem(
-                    label = "الطاقة",
-                    value = energy,
-                    maxValue = 100,
-                    color = VitalEnergy,
-                    icon = Icons.Default.Bolt,
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Hunger (الجوع)
-                StatBarItem(
-                    label = "الشبع",
-                    value = (100 - hunger).coerceIn(0, 100), // Inverted for satiation
-                    maxValue = 100,
-                    color = VitalHunger,
-                    icon = Icons.Default.Restaurant,
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Warmth (الدفء)
-                StatBarItem(
-                    label = "الدفء",
-                    value = warmth,
-                    maxValue = 100,
-                    color = VitalWarmth,
-                    icon = Icons.Default.AcUnit,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Suspicion Meter with ominous pulse
-            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(AlleyCard)
-                    .border(
-                        1.dp,
-                        if (suspicion > 60) SuspicionCritical.copy(alpha = suspicionAlpha) else AlleyCardBorder,
-                        RoundedCornerShape(8.dp)
-                    )
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Visibility,
-                            contentDescription = "مقياس الشك",
-                            tint = if (suspicion > 60) SuspicionCritical else SuspicionPurple,
-                            modifier = Modifier.size(16.dp)
+                    // Energy Pill
+                    CompactPill(
+                        icon = Icons.Default.Bolt,
+                        value = "$energy%",
+                        color = VitalEnergy
+                    )
+                    // Warmth Pill
+                    CompactPill(
+                        icon = Icons.Default.AcUnit,
+                        value = "$warmth%",
+                        color = VitalWarmth
+                    )
+                    // Suspicion Pill (Pulses if >60%)
+                    CompactPill(
+                        icon = Icons.Default.Visibility,
+                        value = "$suspicion%",
+                        color = if (suspicion > 60) SuspicionCritical else SuspicionPurple,
+                        glow = suspicion > 60,
+                        glowAlpha = suspicionAlpha
+                    )
+                }
+
+                // Copper Coins & Toggle Button
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CompactPill(
+                        icon = Icons.Default.MonetizationOn,
+                        value = "$copper",
+                        color = AmberGold
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isHudExpanded) "إخفاء التفاصيل" else "التفاصيل",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = TextMuted,
+                            fontSize = 10.sp
+                        ),
+                        modifier = Modifier
+                            .clickable { onToggleExpand() }
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            // Animated Expanded Details Drawer
+            AnimatedVisibility(
+                visible = isHudExpanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp)
+                ) {
+                    // AI Status indicator pill
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (isAiActive) Color(0x2010B981) else Color(0x20F59E0B))
+                            .border(
+                                1.dp,
+                                if (isAiActive) Color(0x6010B981) else Color(0x60F59E0B),
+                                RoundedCornerShape(16.dp)
+                            )
+                            .clickable { onOpenSettings() }
+                            .padding(horizontal = 10.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .clip(CircleShape)
+                                .background(if (isAiActive) VitalEnergy else AmberGold)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (suspicion > 75) "مقياس الشك (خطر إعدام الاستحواذ!)" else "مقياس الشك والاشتباه",
+                            text = if (isAiActive) "Gemini Flash مفعّل • توليد نصوص وصور غير محدودة" else "الراوي المحلي • اضغط هنا لإدخال مفتاح Gemini",
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = if (suspicion > 60) SuspicionCritical else SuspicionPurple,
-                                fontWeight = FontWeight.Bold
+                                color = if (isAiActive) VitalEnergy else AmberGold,
+                                fontSize = 10.sp
                             )
                         )
                     }
-                    Text(
-                        text = "$suspicion%",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = if (suspicion > 60) SuspicionCritical else SuspicionPurple,
-                            fontWeight = FontWeight.Bold
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Vital Bars Grid
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        DetailedStatBar(
+                            label = "الطاقة",
+                            value = energy,
+                            color = VitalEnergy,
+                            icon = Icons.Default.Bolt,
+                            modifier = Modifier.weight(1f)
                         )
-                    )
+                        DetailedStatBar(
+                            label = "الشبع",
+                            value = (100 - hunger).coerceIn(0, 100),
+                            color = VitalHunger,
+                            icon = Icons.Default.Restaurant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        DetailedStatBar(
+                            label = "الدفء",
+                            value = warmth,
+                            color = VitalWarmth,
+                            icon = Icons.Default.AcUnit,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Secondary Metrics (Child mask, Mana)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        DetailedStatBar(
+                            label = "قناع البراءة",
+                            value = childMask,
+                            color = ChildMaskBlue,
+                            icon = Icons.Default.Face,
+                            modifier = Modifier.weight(1f)
+                        )
+                        DetailedStatBar(
+                            label = "فهم المانا بالفيزياء",
+                            value = mana,
+                            color = ScienceIndigo,
+                            icon = Icons.Default.Science,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                LinearProgressIndicator(
-                    progress = { (suspicion / 100f).coerceIn(0f, 1f) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp)),
-                    color = if (suspicion > 75) SuspicionCritical else SuspicionPurple,
-                    trackColor = Color(0xFF1E1528)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Secondary Metrics (Child Mask, Coins, Science Mana)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Child Mask
-                CompactBadge(
-                    icon = Icons.Default.Face,
-                    label = "قناع البراءة",
-                    value = "$childMask%",
-                    color = ChildMaskBlue,
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Copper Coins
-                CompactBadge(
-                    icon = Icons.Default.MonetizationOn,
-                    label = "نحاس",
-                    value = "$copper",
-                    color = AmberGold,
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Mana Comprehension
-                CompactBadge(
-                    icon = Icons.Default.Science,
-                    label = "فهم المانا",
-                    value = "$mana",
-                    color = ScienceIndigo,
-                    modifier = Modifier.weight(1f)
-                )
             }
         }
     }
 }
 
 @Composable
-private fun StatBarItem(
+private fun CompactPill(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    value: String,
+    color: Color,
+    glow: Boolean = false,
+    glowAlpha: Float = 1f
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(if (glow) color.copy(alpha = glowAlpha * 0.25f) else AlleyCard)
+            .border(
+                1.dp,
+                if (glow) color.copy(alpha = glowAlpha) else AlleyCardBorder,
+                RoundedCornerShape(6.dp)
+            )
+            .padding(horizontal = 6.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(12.dp)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelSmall.copy(
+                color = color,
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.sp
+            )
+        )
+    }
+}
+
+@Composable
+private fun DetailedStatBar(
     label: String,
     value: Int,
-    maxValue: Int,
     color: Color,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     modifier: Modifier = Modifier
@@ -371,22 +455,26 @@ private fun StatBarItem(
                     imageVector = icon,
                     contentDescription = label,
                     tint = color,
-                    modifier = Modifier.size(13.dp)
+                    modifier = Modifier.size(12.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary, fontSize = 10.sp)
+                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary, fontSize = 9.sp)
                 )
             }
             Text(
-                text = "$value/$maxValue",
-                style = MaterialTheme.typography.labelSmall.copy(color = color, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                text = "$value/100",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = color,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 9.sp
+                )
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(3.dp))
         LinearProgressIndicator(
-            progress = { (value / maxValue.toFloat()).coerceIn(0f, 1f) },
+            progress = { (value / 100f).coerceIn(0f, 1f) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(4.dp)
@@ -394,42 +482,5 @@ private fun StatBarItem(
             color = color,
             trackColor = AlleySurface
         )
-    }
-}
-
-@Composable
-private fun CompactBadge(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    value: String,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(AlleyCard)
-            .border(1.dp, AlleyCardBorder, RoundedCornerShape(8.dp))
-            .padding(horizontal = 8.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = color,
-            modifier = Modifier.size(14.dp)
-        )
-        Spacer(modifier = Modifier.width(5.dp))
-        Column {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(color = TextMuted, fontSize = 9.sp)
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.labelSmall.copy(color = color, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-            )
-        }
     }
 }

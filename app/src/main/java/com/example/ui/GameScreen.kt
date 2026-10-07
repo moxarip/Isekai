@@ -56,8 +56,16 @@ fun GameScreen(
                 HeaderHud(
                     session = uiState.session,
                     isAiActive = uiState.isAiActive,
+                    isHudExpanded = uiState.isHudExpanded,
+                    isAutoTtsEnabled = uiState.isAutoTtsEnabled,
+                    isSpeaking = uiState.isSpeaking,
+                    currentSpeaker = uiState.currentSpeaker,
+                    isImageGenerationEnabled = uiState.isImageGenerationEnabled,
                     inventoryCount = uiState.inventory.size,
                     theoremsCount = uiState.theorems.size,
+                    onToggleExpand = { viewModel.toggleHudExpanded() },
+                    onToggleTts = { viewModel.toggleAutoTts() },
+                    onToggleImages = { viewModel.toggleImageGeneration() },
                     onOpenInventory = { viewModel.toggleInventory(true) },
                     onOpenTheorems = { viewModel.toggleTheorems(true) },
                     onOpenSettings = { viewModel.toggleApiKeyDialog(true) }
@@ -86,7 +94,7 @@ fun GameScreen(
                     state = listState,
                     reverseLayout = false,
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
                     modifier = Modifier
                         .fillMaxSize()
                         .testTag("story_logs_list")
@@ -95,7 +103,11 @@ fun GameScreen(
                         items = uiState.turnLogs,
                         key = { it.id }
                     ) { log ->
-                        StoryLogItem(turnLog = log)
+                        StoryLogItem(
+                            turnLog = log,
+                            isSpeakingThis = uiState.isSpeaking,
+                            onPlayAudio = { viewModel.speakTurn(log) }
+                        )
                     }
                 }
 
@@ -179,6 +191,10 @@ fun GameScreen(
             ApiKeyModal(
                 currentMaskedKey = uiState.activeApiKeyMasked,
                 currentModel = uiState.selectedModel,
+                isAutoTtsEnabled = uiState.isAutoTtsEnabled,
+                isImageGenEnabled = uiState.isImageGenerationEnabled,
+                onToggleTts = { viewModel.toggleAutoTts() },
+                onToggleImageGen = { viewModel.toggleImageGeneration() },
                 onSaveKey = { key, model ->
                     viewModel.saveApiKey(key, model)
                 },

@@ -27,6 +27,24 @@ class GameRepository(
     companion object {
         private const val PREF_CUSTOM_API_KEY = "custom_gemini_api_key"
         private const val PREF_SELECTED_MODEL = "selected_gemini_model"
+        private const val PREF_GENERATE_IMAGES = "generate_scene_images"
+        private const val PREF_AUTO_TTS = "auto_tts_reading"
+    }
+
+    fun isImageGenerationEnabled(): Boolean {
+        return prefs.getBoolean(PREF_GENERATE_IMAGES, true)
+    }
+
+    fun setImageGenerationEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(PREF_GENERATE_IMAGES, enabled).apply()
+    }
+
+    fun isAutoTtsEnabled(): Boolean {
+        return prefs.getBoolean(PREF_AUTO_TTS, true)
+    }
+
+    fun setAutoTtsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(PREF_AUTO_TTS, enabled).apply()
     }
 
     fun getActiveApiKey(): String {
@@ -78,6 +96,7 @@ class GameRepository(
                     val tone = it.npcTone?.let { tn -> runCatching { NpcTone.valueOf(tn) }.getOrNull() } ?: NpcTone.THREATENING
                     NpcDialogue(it.npcSpeaker, it.npcSpeech, tone)
                 } else null,
+                sceneImagePath = it.sceneImagePath,
                 timestamp = it.timestamp
             )
         }
@@ -96,69 +115,82 @@ class GameRepository(
     }
 
     suspend fun initializeGameIfEmpty() {
-        val session = dao.getSession()
-        if (session == null) {
-            resetGame()
+        try {
+            val session = dao.getSession()
+            if (session == null) {
+                resetGame()
+            }
+        } catch (e: Throwable) {
+            Log.e("GameRepository", "Error accessing database in initializeGameIfEmpty", e)
+            try {
+                resetGame()
+            } catch (t: Throwable) {
+                Log.e("GameRepository", "Error resetting game", t)
+            }
         }
     }
 
     suspend fun resetGame() {
-        dao.clearInventory()
-        dao.clearTurnLogs()
-        dao.clearTheorems()
+        try {
+            dao.clearInventory()
+            dao.clearTurnLogs()
+            dao.clearTheorems()
 
-        val initialSession = GameSessionEntity(
-            id = 1,
-            turnCount = 1,
-            energy = 25,
-            hunger = 75,
-            warmth = 20,
-            suspicion = 0,
-            childMask = 100,
-            manaComprehension = 10,
-            streetReputation = 5,
-            copperCoins = 0,
-            isGameOver = false,
-            gameOverReason = null,
-            currentNpcSpeaker = "روجر الأعور (مشرف عصابة المتسولين)",
-            currentNpcSpeech = "استيقظ يا ليو الكسول! أين العملات النحاسية الخمس التي كان يُفترض أن تجمعها من سوق الصباح؟ إذا لم تسلمني المال الآن، فسأرميك خارج الأسوار للذئاب تتغذى على عظامك الهزيلة!",
-            currentNpcTone = NpcTone.THREATENING.name
-        )
-        dao.saveSession(initialSession)
-
-        // Seed initial items
-        dao.insertItem(
-            InventoryEntity(
-                id = "stolen_chalk",
-                nameAr = "قطعة طبشور مسروقة",
-                descAr = "قطعة طبشور بيضاء صلبة خبأتها في بطانة معطفك المهترئ.",
-                utilityAr = "تصلح لرسم مسارات المانا، وكتابة معادلات فيزيائية على الجدران، أو ترك إشارات سرية.",
-                quantity = 1
+            val initialSession = GameSessionEntity(
+                id = 1,
+                turnCount = 1,
+                energy = 25,
+                hunger = 75,
+                warmth = 20,
+                suspicion = 0,
+                childMask = 100,
+                manaComprehension = 10,
+                streetReputation = 5,
+                copperCoins = 0,
+                isGameOver = false,
+                gameOverReason = null,
+                currentNpcSpeaker = "روجر الأعور (مشرف عصابة المتسولين)",
+                currentNpcSpeech = "استيقظ يا ليو الكسول! أين العملات النحاسية الخمس التي كان يُفترض أن تجمعها من سوق الصباح؟ إذا لم تسلمني المال الآن، فسأرميك خارج الأسوار للذئاب تتغذى على عظامك الهزيلة!",
+                currentNpcTone = NpcTone.THREATENING.name
             )
-        )
-        dao.insertItem(
-            InventoryEntity(
-                id = "sharp_flint",
-                nameAr = "حجر صوان حاد",
-                descAr = "حجر ناري رمادي ذو حافة مسننة وقاسية.",
-                utilityAr = "توليد شرر فوري بالاحتكاك، أو الدفاع المباغت في الزوايا المظلمة.",
-                quantity = 1
-            )
-        )
+            dao.saveSession(initialSession)
 
-        // Seed initial prologue log
-        val prologueLog = TurnLogEntity(
-            id = UUID.randomUUID().toString(),
-            turnNumber = 1,
-            playerActionText = "البداية: الاستيقاظ في زقاق الفحم المتجمد",
-            actionType = null,
-            narrativeAr = "تفتح عينيك الثقيلتين على لسعات الصقيع التي تنخر جسدك النحيل. أنت متكئ على برميل نبيذ خشبي مكسور، ورائحة الفحم والرطوبة تملأ رئتيك الصغيرتين. ذاكرتك كمدير استراتيجي ومهندس فيزياء تطبيقية ذي 45 عاماً واضحة كضوء النهار، لكن عندما ترفع يديك تجدهما يدي صبي متسخ في العاشرة من عمره يدعى «ليو». يقطع صمت الفجر ركلة عنيفة تهز البرميل بقدم ثقيلة لبلطجي الأزقة «روجر الأعور».",
-            npcSpeaker = "روجر الأعور",
-            npcSpeech = "استيقظ يا ليو الكسول! أين العملات النحاسية الخمس التي كان يُفترض أن تجمعها من سوق الصباح؟ إذا لم تسلمني المال الآن، فسأرميك خارج الأسوار للذئاب تتغذى على عظامك الهزيلة!",
-            npcTone = NpcTone.THREATENING.name,
-            timestamp = System.currentTimeMillis()
-        )
-        dao.insertTurnLog(prologueLog)
+            // Seed initial items
+            dao.insertItem(
+                InventoryEntity(
+                    id = "stolen_chalk",
+                    nameAr = "قطعة طبشور مسروقة",
+                    descAr = "قطعة طبشور بيضاء صلبة خبأتها في بطانة معطفك المهترئ.",
+                    utilityAr = "تصلح لرسم مسارات المانا، وكتابة معادلات فيزيائية على الجدران، أو ترك إشارات سرية.",
+                    quantity = 1
+                )
+            )
+            dao.insertItem(
+                InventoryEntity(
+                    id = "sharp_flint",
+                    nameAr = "حجر صوان حاد",
+                    descAr = "حجر ناري رمادي ذو حافة مسننة وقاسية.",
+                    utilityAr = "توليد شرر فوري بالاحتكاك، أو الدفاع المباغت في الزوايا المظلمة.",
+                    quantity = 1
+                )
+            )
+
+            // Seed initial prologue log
+            val prologueLog = TurnLogEntity(
+                id = UUID.randomUUID().toString(),
+                turnNumber = 1,
+                playerActionText = "البداية: الاستيقاظ في زقاق الفحم المتجمد",
+                actionType = null,
+                narrativeAr = "تفتح عينيك الثقيلتين على لسعات الصقيع التي تنخر جسدك النحيل. أنت متكئ على برميل نبيذ خشبي مكسور، ورائحة الفحم والرطوبة تملأ رئتيك الصغيرتين. ذاكرتك كمدير استراتيجي ومهندس فيزياء تطبيقية ذي 45 عاماً واضحة كضوء النهار، لكن عندما ترفع يديك تجدهما يدي صبي متسخ في العاشرة من عمره يدعى «ليو». يقطع صمت الفجر ركلة عنيفة تهز البرميل بقدم ثقيلة لبلطجي الأزقة «روجر الأعور».",
+                npcSpeaker = "روجر الأعور",
+                npcSpeech = "استيقظ يا ليو الكسول! أين العملات النحاسية الخمس التي كان يُفترض أن تجمعها من سوق الصباح؟ إذا لم تسلمني المال الآن، فسأرميك خارج الأسوار للذئاب تتغذى على عظامك الهزيلة!",
+                npcTone = NpcTone.THREATENING.name,
+                timestamp = System.currentTimeMillis()
+            )
+            dao.insertTurnLog(prologueLog)
+        } catch (e: Throwable) {
+            Log.e("GameRepository", "Error executing resetGame", e)
+        }
     }
 
     suspend fun executeTurn(
@@ -295,6 +327,26 @@ class GameRepository(
             )
         }
 
+        // Generate scene illustration if enabled
+        var sceneImagePath: String? = null
+        if (isImageGenerationEnabled() && apiKey.isNotBlank()) {
+            try {
+                val sceneFile = java.io.File(
+                    context.filesDir,
+                    "scenes/scene_turn_${nextTurnNumber}_${System.currentTimeMillis()}.jpg"
+                )
+                val imgResult = geminiClient.generateSceneIllustration(
+                    apiKey = apiKey,
+                    sceneSummary = turnResponse.narrativeAr.take(180),
+                    characterName = turnResponse.npcDialogue?.speakerName,
+                    outputFile = sceneFile
+                )
+                sceneImagePath = imgResult.getOrNull()
+            } catch (e: Exception) {
+                Log.w("GameRepository", "Scene image generation skipped: ${e.message}")
+            }
+        }
+
         // Insert turn log
         dao.insertTurnLog(
             TurnLogEntity(
@@ -306,10 +358,11 @@ class GameRepository(
                 npcSpeaker = turnResponse.npcDialogue?.speakerName,
                 npcSpeech = turnResponse.npcDialogue?.speechAr,
                 npcTone = turnResponse.npcDialogue?.tone?.name,
+                sceneImagePath = sceneImagePath,
                 timestamp = System.currentTimeMillis()
             )
         )
 
-        return turnResponse
+        return turnResponse.copy(sceneImagePath = sceneImagePath)
     }
 }
