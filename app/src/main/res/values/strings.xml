@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">إعادة ولادة الشارع</string>
+    <string name="game_subtitle">ذكاء الماضي في عالم السحر</string>
+    <string name="vital_energy">الطاقة البدنية</string>
+    <string name="vital_hunger">مستوى الجوع</string>
+    <string name="vital_warmth">مقاومة الصقيع</string>
+    <string name="meter_suspicion">مقياس الشك والاشتباه</string>
+    <string name="meter_child_mask">قناع البراءة</string>
+    <string name="inventory_title">مقتنيات الزقاق</string>
+    <string name="input_placeholder">أدخل قرارك الحر هنا... (اكتب ما تريد أن يفعله ليو)</string>
+    <string name="execute_action">تنفيذ</string>
+</resources>

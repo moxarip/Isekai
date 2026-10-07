@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Lantern top handle -->
+    <path
+        android:pathData="M54,23 C48,23 44,26 44,30 L48,30 C48,28 50.5,26.5 54,26.5 C57.5,26.5 60,28 60,30 L64,30 C64,26 60,23 54,23 Z"
+        android:fillColor="#F59E0B" />
+
+    <!-- Lantern cap / roof -->
+    <path
+        android:pathData="M37,36 L54,29 L71,36 L66,39 L42,39 Z"
+        android:fillColor="#D97706" />
+
+    <!-- Lantern cage body -->
+    <path
+        android:pathData="M42,40 L66,40 L63,68 L45,68 Z"
+        android:strokeColor="#B45309"
+        android:strokeWidth="2.5"
+        android:fillColor="#151A26" />
+
+    <!-- Glass cage inner glow -->
+    <path
+        android:pathData="M44,42 L64,42 L61,66 L47,66 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="54"
+                android:startY="42"
+                android:endX="54"
+                android:endY="66"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#3538BDF8" />
+                <item android:offset="0.5" android:color="#60F59E0B" />
+                <item android:offset="1.0" android:color="#90F59E0B" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Magic inner flame (The Physicist's Mana Spark) -->
+    <path
+        android:pathData="M54,46 C51,51 48,54 48,58 C48,62 50.7,65 54,65 C57.3,65 60,62 60,58 C60,54 57,51 54,46 Z"
+        android:fillColor="#38BDF8" />
+
+    <path
+        android:pathData="M54,51 C52.5,54 51,56 51,59 C51,61 52.3,63 54,63 C55.7,63 57,61 57,59 C57,56 55.5,54 54,51 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Lantern base -->
+    <path
+        android:pathData="M43,68 L65,68 L68,73 L40,73 Z"
+        android:fillColor="#D97706" />
+
+    <path
+        android:pathData="M47,73 L61,73 L60,77 L48,77 Z"
+        android:fillColor="#B45309" />
+
+    <!-- Arcane stars / frost sparkles -->
+    <path
+        android:pathData="M31,48 L33,48 L33,50 L31,50 Z M75,46 L77,46 L77,48 L75,48 Z M34,64 L36,64 L36,66 L34,66 Z M72,62 L74,62 L74,64 L72,64 Z"
+        android:fillColor="#38BDF8" />
+
+    <!-- Modern science atom orbit ring cutting through magic -->
+    <path
+        android:pathData="M34,56 C34,52 74,48 74,56 C74,64 34,60 34,56"
+        android:strokeColor="#6038BDF8"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000" />
+</vector>
